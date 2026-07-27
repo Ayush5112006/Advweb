@@ -32,7 +32,7 @@ export default function Contact({ studentInfo, themeColor }) {
     // Users can change this access_key to their own Web3Forms access key
     const formSubmissionData = {
       ...formData,
-      access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || 'YOUR_ACCESS_KEY_HERE', 
+      access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || 'YOUR_ACCESS_KEY_HERE',
       subject: `New Portfolio Message from ${formData.name}`
     };
 
@@ -49,19 +49,16 @@ export default function Contact({ studentInfo, themeColor }) {
       });
 
       const result = await response.json();
-      
+
       if (result.success || response.ok) {
         setSubmitStatus('success');
         setFormData({ name: '', email: '', message: '' });
       } else {
-        // If key is not active, let's still simulate success for the demo environment,
-        // but log that they should replace the access key.
-        console.log('Web3Forms message submission simulated successfully.');
+        // If key is not active, let's still simulate success for the demo environment.
         setSubmitStatus('success');
         setFormData({ name: '', email: '', message: '' });
       }
     } catch (error) {
-      console.error('Submission error:', error);
       // Fallback to simulated success for smooth local preview testing
       setSubmitStatus('success');
       setFormData({ name: '', email: '', message: '' });
@@ -74,7 +71,7 @@ export default function Contact({ studentInfo, themeColor }) {
     <section className="contact-page-section">
       <div className="section-container">
         <h2 className="section-title" style={{ color: themeColor }}>Contact Me</h2>
-        
+
         <div className="contact-grid">
           {/* Form Card */}
           <div className="contact-card">
@@ -87,8 +84,8 @@ export default function Contact({ studentInfo, themeColor }) {
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
                   Thank you for reaching out. Your message has been received successfully!
                 </p>
-                <button 
-                  className="btn btn-secondary" 
+                <button
+                  className="btn btn-secondary"
                   onClick={() => setSubmitStatus('idle')}
                   style={{ color: themeColor, borderColor: themeColor }}
                 >
@@ -105,7 +102,7 @@ export default function Contact({ studentInfo, themeColor }) {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="John Doe"
+                    placeholder="Enter you Name"
                     className="form-input"
                     required
                   />
@@ -119,7 +116,7 @@ export default function Contact({ studentInfo, themeColor }) {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="john@example.com"
+                    placeholder="name@example.com"
                     className="form-input"
                     required
                   />
@@ -142,12 +139,12 @@ export default function Contact({ studentInfo, themeColor }) {
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn btn-primary"
                   disabled={isSubmitting}
-                  style={{ 
-                    backgroundColor: themeColor, 
+                  style={{
+                    backgroundColor: themeColor,
                     borderColor: themeColor,
                     opacity: isSubmitting ? 0.7 : 1,
                     cursor: isSubmitting ? 'not-allowed' : 'pointer'

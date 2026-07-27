@@ -19,10 +19,26 @@ export default function NavBar({ isLightMode, toggleTheme, themeColor }) {
           </li>
           <li className="nav-item">
             <NavLink 
+              to="/about" 
+              className={({ isActive }) => `nav-links ${isActive ? 'active' : ''}`}
+            >
+              About
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink 
               to="/projects" 
               className={({ isActive }) => `nav-links ${isActive ? 'active' : ''}`}
             >
               Projects
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink 
+              to="/skills" 
+              className={({ isActive }) => `nav-links ${isActive ? 'active' : ''}`}
+            >
+              Skills
             </NavLink>
           </li>
           <li className="nav-item">

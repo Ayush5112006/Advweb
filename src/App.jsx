@@ -3,8 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
+import Skills from './pages/Skills';
+import About from './pages/About';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+
+
 
 function App() {
   // Theme options for inline styling
@@ -49,7 +53,12 @@ function App() {
     { name: 'HTML5 & CSS3', level: 'Advanced', icon: '🎨' },
     { name: 'Node.js & Express', level: 'Intermediate', icon: '🟢' },
     { name: 'Tailwind / Vanilla CSS', level: 'Advanced', icon: '💅' },
-    { name: 'Git & GitHub', level: 'Intermediate', icon: '🐙' }
+    { name: 'Git & GitHub', level: 'Intermediate', icon: '🐙' },
+    { name: 'Flutter', level: 'Intermediate', icon: '💙' },
+    { name: 'Dart', level: 'Intermediate', icon: '🎯' },
+    { name: 'Python', level: 'Intermediate', icon: '🐍' },
+    { name: 'Power BI Desktop', level: 'Intermediate', icon: '📊' },
+    { name: 'Tableau', level: 'Intermediate', icon: '📈' }
   ];
 
   return (
@@ -92,6 +101,14 @@ function App() {
             <Route 
               path="/projects" 
               element={<Projects studentInfo={studentInfo} themeColor={themeColor} />} 
+            />
+            <Route 
+              path="/about" 
+              element={<About studentInfo={studentInfo} themeColor={themeColor} />} 
+            />
+            <Route 
+              path="/skills" 
+              element={<Skills studentInfo={studentInfo} themeColor={themeColor} />} 
             />
             <Route 
               path="/contact" 

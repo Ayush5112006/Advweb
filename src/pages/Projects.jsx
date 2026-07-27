@@ -43,7 +43,7 @@ export default function Projects({ studentInfo, themeColor }) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    
+
     // Fetch repositories of Ayush5112006
     fetch('https://api.github.com/users/Ayush5112006/repos?sort=updated&per_page=10')
       .then((res) => {
@@ -70,8 +70,6 @@ export default function Projects({ studentInfo, themeColor }) {
   const handleRetry = () => {
     setRetryTrigger((prev) => prev + 1);
   };
-
-  // Filter repos based on search query
   const filteredRepos = repos.filter((repo) =>
     repo.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -205,7 +203,7 @@ export default function Projects({ studentInfo, themeColor }) {
                         <p className="project-desc" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
                           {repo.description || 'No description provided.'}
                         </p>
-                        
+
                         {repo.language && (
                           <div className="project-tech" style={{ marginBottom: '16px' }}>
                             <span className="tech-tag" style={{ fontSize: '0.7rem' }}>
