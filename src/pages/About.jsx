@@ -6,7 +6,7 @@ export default function AboutPage({ studentInfo, themeColor }) {
   const milestones = [
     {
       year: '2024 - Present',
-      title: 'B.Sc. in Computer Science',
+      title: 'B.Tech. in Computer Science',
       institution: 'CHARUSAT University (Class of 2028)',
       desc: 'Focusing on database architectures, algorithms, frontend frameworks, and full-stack software development.'
     },
@@ -23,17 +23,17 @@ export default function AboutPage({ studentInfo, themeColor }) {
       <section className="about-page-section">
         <div className="section-container">
           <h1 className="section-title" style={{ color: themeColor }}>About Me</h1>
-          
+
           <div className="about-page-grid">
             {/* Biography & Story */}
             <div className="about-page-card intro-card">
               <h2 className="about-card-title">My Journey</h2>
               <p className="about-text-p">{studentInfo.bio}</p>
               <p className="about-text-p">
-                I thrive on solving complex frontend design problems, engineering responsive user interfaces, 
+                I thrive on solving complex frontend design problems, engineering responsive user interfaces,
                 and translating product wireframes into interactive, high-performance web applications.
               </p>
-              
+
               <div className="personal-details-grid">
                 <div className="detail-item">
                   <span className="detail-label">Location</span>
@@ -51,8 +51,8 @@ export default function AboutPage({ studentInfo, themeColor }) {
               <h2 className="about-card-title">Interests & Hobbies</h2>
               <div className="interests-badges">
                 {studentInfo.interests.map((interest, idx) => (
-                  <span 
-                    key={idx} 
+                  <span
+                    key={idx}
                     className="interest-badge-item"
                     style={{ borderColor: themeColor, color: themeColor }}
                   >
@@ -60,7 +60,7 @@ export default function AboutPage({ studentInfo, themeColor }) {
                   </span>
                 ))}
               </div>
-              
+
               <h2 className="about-card-title" style={{ marginTop: '30px' }}>What I Do</h2>
               <ul className="what-i-do-list">
                 <li>🎨 <strong>UI/UX Prototyping:</strong> Designing state-of-the-art mockups and layouts.</li>

@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Skills from './pages/Skills';
 import About from './pages/About';
+import Tasks from './pages/Tasks';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
 
@@ -109,6 +110,10 @@ function App() {
             <Route 
               path="/skills" 
               element={<Skills studentInfo={studentInfo} themeColor={themeColor} />} 
+            />
+            <Route 
+              path="/tasks" 
+              element={<Tasks studentInfo={studentInfo} themeColor={themeColor} />} 
             />
             <Route 
               path="/contact" 

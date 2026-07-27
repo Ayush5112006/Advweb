@@ -43,6 +43,14 @@ export default function NavBar({ isLightMode, toggleTheme, themeColor }) {
           </li>
           <li className="nav-item">
             <NavLink 
+              to="/tasks" 
+              className={({ isActive }) => `nav-links ${isActive ? 'active' : ''}`}
+            >
+              Tasks
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink 
               to="/contact" 
               className={({ isActive }) => `nav-links ${isActive ? 'active' : ''}`}
             >
