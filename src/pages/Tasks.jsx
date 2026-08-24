@@ -9,7 +9,7 @@ export default function TasksPage({ studentInfo, themeColor }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usingMockData, setUsingMockData] = useState(false);
 
-  const API_URL = 'http://localhost:5000/tasks';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/tasks';
 
   // Fallback Mock Data in case server is not running
   const mockTasks = [
@@ -129,7 +129,7 @@ export default function TasksPage({ studentInfo, themeColor }) {
 
           {usingMockData && (
             <div className="offline-banner">
-              ⚠️ Local backend server (port 5000) is offline. Using local mock data. Run <code>npm run server</code> to connect.
+              ⚠️ Local backend server (port 5050) is offline. Using local mock data. Run <code>npm run server</code> to connect.
             </div>
           )}
 

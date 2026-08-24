@@ -28,37 +28,58 @@ const request = (options, postData) => {
 };
 
 async function runTests() {
-  console.log('--- STARTING REST API TESTS ---');
+  console.log('====================================================');
+  console.log('--- STARTING PRACTICAL 5 MONGOOSE & API TESTS ---');
+  console.log('====================================================');
+
+  let createdTaskId = null;
+  const dummyNonExistentId = '507f1f77bcf86cd799439011';
 
   try {
-    // 1. GET /tasks (all tasks)
-    console.log('\nTest 1: GET /tasks');
+    // Test 1: GET /tasks (all tasks)
+    console.log('\n[Test 1] GET /tasks');
     const t1 = await request({
-      hostname: 'localhost',
-      port: 5000,
+      hostname: '127.0.0.1',
+      port: 5050,
       path: '/tasks',
       method: 'GET'
     });
-    console.log('Status:', t1.statusCode);
-    console.log('Body:', t1.body);
+    console.log('Status Code:', t1.statusCode);
+    console.log('Response Body:', JSON.stringify(t1.body, null, 2));
 
-    // 2. GET /tasks/1 (retrieve single task)
-    console.log('\nTest 2: GET /tasks/1');
-    const t2 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/tasks/1',
-      method: 'GET'
+    // Test 2: POST /tasks (Valid payload with un-trimmed title & priority)
+    console.log('\n[Test 2] POST /tasks (Valid Payload with title trimming & priority)');
+    const t2Payload = JSON.stringify({
+      title: '   MongoDB & Mongoose Practical Task   ',
+      description: 'Test pre-save hook trimming and enum validation',
+      completed: false,
+      priority: 'high'
     });
-    console.log('Status:', t2.statusCode);
-    console.log('Body:', t2.body);
+    const t2 = await request({
+      hostname: '127.0.0.1',
+      port: 5050,
+      path: '/tasks',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(t2Payload)
+      }
+    }, t2Payload);
+    console.log('Status Code:', t2.statusCode);
+    console.log('Response Body:', JSON.stringify(t2.body, null, 2));
+    if (t2.body && t2.body._id) {
+      createdTaskId = t2.body._id;
+    }
 
-    // 3. POST /tasks (create task with correct headers)
-    console.log('\nTest 3: POST /tasks (Valid payload)');
-    const t3Payload = JSON.stringify({ title: 'New Test Task', completed: false });
+    // Test 3: POST /tasks (Missing Title -> Schema Validation Error)
+    console.log('\n[Test 3] POST /tasks (Validation Failure: Missing Title)');
+    const t3Payload = JSON.stringify({
+      description: 'Missing title task',
+      priority: 'low'
+    });
     const t3 = await request({
-      hostname: 'localhost',
-      port: 5000,
+      hostname: '127.0.0.1',
+      port: 5050,
       path: '/tasks',
       method: 'POST',
       headers: {
@@ -66,94 +87,128 @@ async function runTests() {
         'Content-Length': Buffer.byteLength(t3Payload)
       }
     }, t3Payload);
-    console.log('Status:', t3.statusCode);
-    console.log('Body:', t3.body);
+    console.log('Status Code:', t3.statusCode);
+    console.log('Structured Validation Error Response:', JSON.stringify(t3.body, null, 2));
 
-    // 4. POST /tasks without Content-Type: application/json
-    console.log('\nTest 4: POST /tasks (Missing Content-Type)');
-    const t4Payload = JSON.stringify({ title: 'Invalid Header Task' });
+    // Test 4: POST /tasks (Invalid Priority Enum -> Validation Error)
+    console.log('\n[Test 4] POST /tasks (Validation Failure: Invalid Priority Enum)');
+    const t4Payload = JSON.stringify({
+      title: 'Enum Test Task',
+      priority: 'super-urgent'
+    });
     const t4 = await request({
-      hostname: 'localhost',
-      port: 5000,
+      hostname: '127.0.0.1',
+      port: 5050,
       path: '/tasks',
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(t4Payload)
       }
     }, t4Payload);
-    console.log('Status:', t4.statusCode);
-    console.log('Body:', t4.body);
+    console.log('Status Code:', t4.statusCode);
+    console.log('Structured Enum Error Response:', JSON.stringify(t4.body, null, 2));
 
-    // 5. POST /tasks with simulated error
-    console.log('\nTest 5: POST /tasks (Error Simulation)');
-    const t5Payload = JSON.stringify({ title: 'trigger-error' });
-    const t5 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/tasks',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(t5Payload)
-      }
-    }, t5Payload);
-    console.log('Status:', t5.statusCode);
-    console.log('Body:', t5.body);
+    // Test 5: GET /tasks/:id (Retrieve Single Task)
+    if (createdTaskId) {
+      console.log(`\n[Test 5] GET /tasks/${createdTaskId} (Retrieve Created Task)`);
+      const t5 = await request({
+        hostname: '127.0.0.1',
+        port: 5050,
+        path: `/tasks/${createdTaskId}`,
+        method: 'GET'
+      });
+      console.log('Status Code:', t5.statusCode);
+      console.log('Response Body:', JSON.stringify(t5.body, null, 2));
+    }
 
-    // 6. PUT /tasks/2 (update task)
-    console.log('\nTest 6: PUT /tasks/2 (Update completed to true)');
-    const t6Payload = JSON.stringify({ completed: true });
+    // Test 6: GET /tasks/:id (404 Non-existent ObjectId)
+    console.log(`\n[Test 6] GET /tasks/${dummyNonExistentId} (Non-existent Task 404 handling)`);
     const t6 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/tasks/2',
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(t6Payload)
-      }
-    }, t6Payload);
-    console.log('Status:', t6.statusCode);
-    console.log('Body:', t6.body);
+      hostname: '127.0.0.1',
+      port: 5050,
+      path: `/tasks/${dummyNonExistentId}`,
+      method: 'GET'
+    });
+    console.log('Status Code:', t6.statusCode);
+    console.log('404 JSON Response:', JSON.stringify(t6.body, null, 2));
 
-    // 7. DELETE /tasks/3 (delete task)
-    console.log('\nTest 7: DELETE /tasks/3');
+    // Test 7: GET /tasks/invalid-id-format (400 Bad Request)
+    console.log('\n[Test 7] GET /tasks/invalid-id-123 (Invalid ObjectId format)');
     const t7 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/tasks/3',
-      method: 'DELETE'
-    });
-    console.log('Status:', t7.statusCode);
-    console.log('Body:', t7.body);
-
-    // 8. GET /tasks/3 (verify deletion)
-    console.log('\nTest 8: GET /tasks/3 (Verify deletion)');
-    const t8 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/tasks/3',
+      hostname: '127.0.0.1',
+      port: 5050,
+      path: '/tasks/invalid-id-123',
       method: 'GET'
     });
-    console.log('Status:', t8.statusCode);
-    console.log('Body:', t8.body);
+    console.log('Status Code:', t7.statusCode);
+    console.log('400 Bad Request Response:', JSON.stringify(t7.body, null, 2));
 
-    // 9. GET /undefined-route (404 handler)
-    console.log('\nTest 9: GET /undefined-route (404 handler)');
-    const t9 = await request({
-      hostname: 'localhost',
-      port: 5000,
-      path: '/undefined-route',
+    // Test 8: PUT /tasks/:id (Update Task)
+    if (createdTaskId) {
+      console.log(`\n[Test 8] PUT /tasks/${createdTaskId} (Update Task)`);
+      const t8Payload = JSON.stringify({
+        completed: true,
+        priority: 'medium'
+      });
+      const t8 = await request({
+        hostname: '127.0.0.1',
+        port: 5050,
+        path: `/tasks/${createdTaskId}`,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(t8Payload)
+        }
+      }, t8Payload);
+      console.log('Status Code:', t8.statusCode);
+      console.log('Updated Task Response:', JSON.stringify(t8.body, null, 2));
+    }
+
+    // Test 9: DELETE /tasks/:id (Delete Task)
+    if (createdTaskId) {
+      console.log(`\n[Test 9] DELETE /tasks/${createdTaskId}`);
+      const t9 = await request({
+        hostname: '127.0.0.1',
+        port: 5050,
+        path: `/tasks/${createdTaskId}`,
+        method: 'DELETE'
+      });
+      console.log('Status Code:', t9.statusCode);
+      console.log('Deleted Task Response:', JSON.stringify(t9.body, null, 2));
+    }
+
+    // Test 10: GET /tasks/:id (Verify Deletion 404)
+    if (createdTaskId) {
+      console.log(`\n[Test 10] GET /tasks/${createdTaskId} (Verify Deletion 404)`);
+      const t10 = await request({
+        hostname: '127.0.0.1',
+        port: 5050,
+        path: `/tasks/${createdTaskId}`,
+        method: 'GET'
+      });
+      console.log('Status Code:', t10.statusCode);
+      console.log('Deletion Verification 404 Response:', JSON.stringify(t10.body, null, 2));
+    }
+
+    // Test 11: GET /non-existent-endpoint (404 route handler)
+    console.log('\n[Test 11] GET /non-existent-endpoint (Undefined Route 404)');
+    const t11 = await request({
+      hostname: '127.0.0.1',
+      port: 5050,
+      path: '/non-existent-endpoint',
       method: 'GET'
     });
-    console.log('Status:', t9.statusCode);
-    console.log('Body:', t9.body);
+    console.log('Status Code:', t11.statusCode);
+    console.log('404 Route Response:', JSON.stringify(t11.body, null, 2));
 
   } catch (err) {
-    console.error('Test run failed:', err);
+    console.error('Test Execution Failed:', err);
   }
 
-  console.log('\n--- TESTS COMPLETED ---');
+  console.log('\n====================================================');
+  console.log('--- PRACTICAL 5 API TESTS COMPLETED ---');
+  console.log('====================================================');
 }
 
 runTests();

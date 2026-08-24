@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import Task from './models/Task.js';
 
 // Load environment variables from the root .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -11,56 +12,35 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
-// ─── MongoDB Atlas Connection ──────────────────────────────────────────────────
-const MONGODB_URI = process.env.MONGODB_URI;
+// ─── MongoDB Connection ────────────────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error('[ERROR] MONGODB_URI is not defined in .env file.');
+  console.error('[ERROR] MONGO_URI or MONGODB_URI is not defined in .env file.');
   process.exit(1);
 }
 
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log('[DB] Connected to MongoDB Atlas successfully.'))
+  .then(() => console.log('[DB] Connected to MongoDB database successfully.'))
   .catch((err) => {
-    console.error('[DB] MongoDB connection failed:', err.message);
+    console.error('[DB] MongoDB connection error:', err.message);
     process.exit(1);
   });
 
-// ─── Mongoose Task Schema & Model ─────────────────────────────────────────────
-const taskSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: [true, 'Task title is required.'],
-      trim: true
-    },
-    completed: {
-      type: Boolean,
-      default: false
-    }
-  },
-  { timestamps: true }
-);
-
-const Task = mongoose.model('Task', taskSchema);
-
 // ─── Middleware ───────────────────────────────────────────────────────────────
-// Enable Cross-Origin Resource Sharing (CORS) for frontend client
 app.use(cors());
-
-// Parse incoming JSON requests
 app.use(express.json());
 
-// 1. Request Logging Middleware (logs method, URL, and timestamp for every request)
+// Request logging middleware
 app.use((req, res, next) => {
   console.log(`[LOG] ${new Date().toISOString()} | ${req.method} ${req.url}`);
   next();
 });
 
-// 2. Supplementary Middleware: Content-Type validation for POST/PUT requests
+// Content-Type validation middleware for POST/PUT requests
 const validateContentType = (req, res, next) => {
   if (['POST', 'PUT'].includes(req.method)) {
     const contentType = req.headers['content-type'];
@@ -75,9 +55,24 @@ const validateContentType = (req, res, next) => {
 };
 app.use(validateContentType);
 
-// ─── CRUD Routes ──────────────────────────────────────────────────────────────
+// ─── CRUD Routes using Mongoose Model ─────────────────────────────────────────
 
-// CRUD Route 1: GET /tasks (Retrieve all tasks, supports search filtering)
+// GET / - Root welcome endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Task Management API with MongoDB & Mongoose is running.',
+    status: 'online',
+    endpoints: {
+      getAllTasks: 'GET /tasks',
+      getTaskById: 'GET /tasks/:id',
+      createTask: 'POST /tasks',
+      updateTask: 'PUT /tasks/:id',
+      deleteTask: 'DELETE /tasks/:id'
+    }
+  });
+});
+
+// GET /tasks - Retrieve all tasks (supports title search filtering)
 app.get('/tasks', async (req, res, next) => {
   try {
     const { search } = req.query;
@@ -91,83 +86,77 @@ app.get('/tasks', async (req, res, next) => {
   }
 });
 
-// CRUD Route 2: GET /tasks/:id (Retrieve a single task by ID)
+// GET /tasks/:id - Retrieve a single task by ID (with 404 JSON handling)
 app.get('/tasks/:id', async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'Task ID must be a valid MongoDB ObjectId.'
+        message: `Invalid Task ID format: ${id}. Must be a valid 24-character hexadecimal ObjectId.`
       });
     }
-    const task = await Task.findById(req.params.id);
+
+    const task = await Task.findById(id);
     if (!task) {
       return res.status(404).json({
         error: 'Not Found',
-        message: `Task with ID ${req.params.id} not found.`
+        message: `Task with ID ${id} not found.`
       });
     }
+
     res.status(200).json(task);
   } catch (err) {
     next(err);
   }
 });
 
-// CRUD Route 3: POST /tasks (Create a new task)
+// POST /tasks - Create a new task (enforces schema validation & pre-save hook)
 app.post('/tasks', async (req, res, next) => {
   try {
-    const { title, completed } = req.body;
+    const { title, description, completed, priority } = req.body;
 
-    if (!title || typeof title !== 'string' || title.trim() === '') {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'Task title is required and must be a non-empty string.'
-      });
+    // Trigger error simulation if requested for testing global error handler
+    if (title === 'trigger-error') {
+      throw new Error('Simulated internal server error for testing.');
     }
 
-    // Force an error simulation if the title is "trigger-error"
-    if (title.trim() === 'trigger-error') {
-      throw new Error('Simulated internal server error for global handler test.');
-    }
-
-    const newTask = await Task.create({
-      title: title.trim(),
-      completed: completed === true || completed === 'true'
+    // Instantiate model and call save() so pre-save hooks execute
+    const task = new Task({
+      title,
+      description,
+      completed,
+      priority
     });
 
-    res.status(201).json(newTask);
+    const savedTask = await task.save();
+    res.status(201).json(savedTask);
   } catch (err) {
     next(err);
   }
 });
 
-// CRUD Route 4: PUT /tasks/:id (Update a task)
+// PUT /tasks/:id - Update an existing task by ID
 app.put('/tasks/:id', async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'Task ID must be a valid MongoDB ObjectId.'
+        message: `Invalid Task ID format: ${id}. Must be a valid 24-character hexadecimal ObjectId.`
       });
     }
 
-    const { title, completed } = req.body;
-
-    // Validate title if provided
-    if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'Task title must be a non-empty string.'
-      });
-    }
-
+    const { title, description, completed, priority } = req.body;
     const updateFields = {};
-    if (title !== undefined) updateFields.title = title.trim();
-    if (completed !== undefined)
-      updateFields.completed = completed === true || completed === 'true';
+
+    if (title !== undefined) updateFields.title = typeof title === 'string' ? title.trim() : title;
+    if (description !== undefined) updateFields.description = description;
+    if (completed !== undefined) updateFields.completed = completed;
+    if (priority !== undefined) updateFields.priority = priority;
 
     const updatedTask = await Task.findByIdAndUpdate(
-      req.params.id,
+      id,
       { $set: updateFields },
       { new: true, runValidators: true }
     );
@@ -175,7 +164,7 @@ app.put('/tasks/:id', async (req, res, next) => {
     if (!updatedTask) {
       return res.status(404).json({
         error: 'Not Found',
-        message: `Task with ID ${req.params.id} not found.`
+        message: `Task with ID ${id} not found.`
       });
     }
 
@@ -185,22 +174,23 @@ app.put('/tasks/:id', async (req, res, next) => {
   }
 });
 
-// CRUD Route 5: DELETE /tasks/:id (Delete a task)
+// DELETE /tasks/:id - Delete a task by ID
 app.delete('/tasks/:id', async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'Task ID must be a valid MongoDB ObjectId.'
+        message: `Invalid Task ID format: ${id}. Must be a valid 24-character hexadecimal ObjectId.`
       });
     }
 
-    const deletedTask = await Task.findByIdAndDelete(req.params.id);
+    const deletedTask = await Task.findByIdAndDelete(id);
 
     if (!deletedTask) {
       return res.status(404).json({
         error: 'Not Found',
-        message: `Task with ID ${req.params.id} not found.`
+        message: `Task with ID ${id} not found.`
       });
     }
 
@@ -215,7 +205,7 @@ app.delete('/tasks/:id', async (req, res, next) => {
 
 // ─── Error Handlers ───────────────────────────────────────────────────────────
 
-// 3. Custom 404 Handler for undefined routes
+// Custom 404 Handler for non-existent route endpoints
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
@@ -223,12 +213,32 @@ app.use((req, res) => {
   });
 });
 
-// 4. Global Error Handling Middleware (must be defined last)
+// Global Error Handling Middleware (formats Mongoose validation errors as structured JSON)
 app.use((err, req, res, next) => {
-  console.error('[ERROR] Global handler caught:', err.stack);
+  console.error('[ERROR] Global Error Handler Caught:', err.message);
+
+  // Mongoose Validation Error (e.g. required field missing, enum constraint violation)
+  if (err.name === 'ValidationError') {
+    const details = Object.values(err.errors).map((e) => e.message);
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: 'Schema validation failed for the request payload.',
+      details
+    });
+  }
+
+  // Mongoose Cast Error (invalid ObjectId cast)
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: `Invalid format for field '${err.path}': ${err.value}`
+    });
+  }
+
+  // Fallback 500 Internal Server Error
   res.status(500).json({
     error: 'Internal Server Error',
-    message: err.message || 'Something went wrong on the server.'
+    message: err.message || 'An unexpected error occurred on the server.'
   });
 });
 
@@ -237,4 +247,4 @@ const server = app.listen(PORT, () => {
   console.log(`Task Manager Server running on port ${PORT}`);
 });
 
-export default server; // Exporting for testing/verification purposes
+export default server;
