@@ -158,7 +158,7 @@ app.put('/tasks/:id', async (req, res, next) => {
     const updatedTask = await Task.findByIdAndUpdate(
       id,
       { $set: updateFields },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedTask) {
