@@ -25,7 +25,9 @@ const taskSchema = new mongoose.Schema(
     },
     createdAt: {
       type: Date,
-      default: Date.now
+      default: Date.now,
+      // Supports the .sort({ createdAt: -1 }) used by GET /tasks
+      index: true
     }
   },
   {

@@ -1,9 +1,8 @@
+// Must stay first: loads .env before any module reads process.env at import time
+import './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import Task from './models/Task.js';
 import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
@@ -11,11 +10,15 @@ import {
   validateCreateTask,
   validateUpdateTask
 } from './middleware/validationMiddleware.js';
-
-// Load environment variables from the root .env file
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, '..', '.env') });
+import {
+  TASKS_ALL_KEY,
+  buildSearchKey,
+  escapeRegex,
+  getCachedTasks,
+  setCachedTasks,
+  invalidateTaskListCache,
+  CACHE_TTL_SECONDS
+} from './cache/taskCache.js';
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -91,14 +94,41 @@ app.use(authRoutes);
 // ─── Protected Routes (require a valid JWT) ───────────────────────────────────
 app.use('/tasks', authMiddleware);
 
-// GET /tasks - Retrieve all tasks (supports title search filtering)
+// GET /tasks - Retrieve all tasks (served from in-memory cache when possible)
 app.get('/tasks', async (req, res, next) => {
+  const start = Date.now();
+
   try {
     const { search } = req.query;
-    const filter = search
-      ? { title: { $regex: search, $options: 'i' } }
-      : {};
-    const tasks = await Task.find(filter).sort({ createdAt: -1 });
+    const term = typeof search === 'string' ? search.trim() : '';
+
+    // Unfiltered and filtered requests must never share a cache entry
+    const cacheKey = term ? buildSearchKey(term) : TASKS_ALL_KEY;
+
+    const cachedTasks = getCachedTasks(cacheKey);
+    if (cachedTasks) {
+      const duration = Date.now() - start;
+      console.log(`[CACHE] HIT: ${cacheKey} (${cachedTasks.length} task(s))`);
+      console.log(`[PERFORMANCE] GET /tasks: ${duration}ms (CACHE HIT)`);
+      res.set('X-Cache', 'HIT');
+      return res.status(200).json(cachedTasks);
+    }
+
+    console.log(`[CACHE] MISS: ${cacheKey} | querying MongoDB...`);
+
+    // Search input is escaped so it is matched literally, not as a regex
+    const filter = term ? { title: { $regex: escapeRegex(term), $options: 'i' } } : {};
+
+    // .lean() skips Mongoose document hydration - safe here because the
+    // response is only serialised to JSON, no document methods are used
+    const tasks = await Task.find(filter).sort({ createdAt: -1 }).lean();
+
+    setCachedTasks(cacheKey, tasks);
+
+    const duration = Date.now() - start;
+    console.log(`[CACHE] STORED: ${cacheKey} (${tasks.length} task(s), TTL ${CACHE_TTL_SECONDS}s)`);
+    console.log(`[PERFORMANCE] GET /tasks: ${duration}ms (CACHE MISS)`);
+    res.set('X-Cache', 'MISS');
     res.status(200).json(tasks);
   } catch (err) {
     next(err);
@@ -149,6 +179,10 @@ app.post('/tasks', validateCreateTask, async (req, res, next) => {
     });
 
     const savedTask = await task.save();
+
+    // Task list changed - drop cached lists so the next GET is a MISS
+    invalidateTaskListCache();
+
     res.status(201).json(savedTask);
   } catch (err) {
     next(err);
@@ -187,6 +221,8 @@ app.put('/tasks/:id', validateUpdateTask, async (req, res, next) => {
       });
     }
 
+    invalidateTaskListCache();
+
     res.status(200).json(updatedTask);
   } catch (err) {
     next(err);
@@ -212,6 +248,8 @@ app.delete('/tasks/:id', async (req, res, next) => {
         message: `Task with ID ${id} not found.`
       });
     }
+
+    invalidateTaskListCache();
 
     res.status(200).json({
       message: 'Task successfully deleted.',
