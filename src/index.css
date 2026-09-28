@@ -784,6 +784,28 @@ section {
   padding: 60px 0;
 }
 
+/* Full-viewport wrapper for the React.lazy route Suspense fallback */
+.route-loading {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.route-loading .loading-container {
+  gap: 18px;
+}
+
+.route-loading p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
 .spinner {
   width: 48px;
   height: 48px;

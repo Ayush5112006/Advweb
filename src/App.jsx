@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
+import LoadingScreen from './components/LoadingScreen';
 import Home from './pages/Home';
-import Projects from './pages/Projects';
-import Skills from './pages/Skills';
-import About from './pages/About';
-import Tasks from './pages/Tasks';
-import Contact from './pages/Contact';
-import NotFound from './pages/NotFound';
+
+// Route-based code splitting: each page below ships as its own chunk and is
+// only downloaded when its route is first visited. Home and the shared
+// NavBar stay in the main bundle because they render on the initial load.
+const Projects = lazy(() => import('./pages/Projects'));
+const Skills = lazy(() => import('./pages/Skills'));
+const About = lazy(() => import('./pages/About'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const Contact = lazy(() => import('./pages/Contact'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 
 
@@ -88,47 +93,49 @@ function App() {
         />
 
         <main className="main-content">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <Home 
-                  studentInfo={studentInfo} 
-                  skillList={skillList} 
-                  themeColor={themeColor} 
-                />
-              } 
-            />
-            <Route 
-              path="/projects" 
-              element={<Projects studentInfo={studentInfo} themeColor={themeColor} />} 
-            />
-            <Route 
-              path="/about" 
-              element={<About studentInfo={studentInfo} themeColor={themeColor} />} 
-            />
-            <Route 
-              path="/skills" 
-              element={<Skills studentInfo={studentInfo} themeColor={themeColor} />} 
-            />
-            <Route 
-              path="/tasks" 
-              element={<Tasks studentInfo={studentInfo} themeColor={themeColor} />} 
-            />
-            <Route 
-              path="/contact" 
-              element={
-                <Contact 
-                  studentInfo={studentInfo} 
-                  themeColor={themeColor} 
-                />
-              } 
-            />
-            <Route 
-              path="*" 
-              element={<NotFound themeColor={themeColor} />} 
-            />
-          </Routes>
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <Home
+                    studentInfo={studentInfo}
+                    skillList={skillList}
+                    themeColor={themeColor}
+                  />
+                }
+              />
+              <Route
+                path="/projects"
+                element={<Projects studentInfo={studentInfo} themeColor={themeColor} />}
+              />
+              <Route
+                path="/about"
+                element={<About studentInfo={studentInfo} themeColor={themeColor} />}
+              />
+              <Route
+                path="/skills"
+                element={<Skills studentInfo={studentInfo} themeColor={themeColor} />}
+              />
+              <Route
+                path="/tasks"
+                element={<Tasks studentInfo={studentInfo} themeColor={themeColor} />}
+              />
+              <Route
+                path="/contact"
+                element={
+                  <Contact
+                    studentInfo={studentInfo}
+                    themeColor={themeColor}
+                  />
+                }
+              />
+              <Route
+                path="*"
+                element={<NotFound themeColor={themeColor} />}
+              />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </Router>
