@@ -5,6 +5,12 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import Task from './models/Task.js';
+import authRoutes from './routes/authRoutes.js';
+import authMiddleware from './middleware/authMiddleware.js';
+import {
+  validateCreateTask,
+  validateUpdateTask
+} from './middleware/validationMiddleware.js';
 
 // Load environment variables from the root .env file
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +25,11 @@ const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   console.error('[ERROR] MONGO_URI or MONGODB_URI is not defined in .env file.');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('[ERROR] JWT_SECRET is not defined in .env file.');
   process.exit(1);
 }
 
@@ -57,20 +68,28 @@ app.use(validateContentType);
 
 // ─── CRUD Routes using Mongoose Model ─────────────────────────────────────────
 
-// GET / - Root welcome endpoint
+// ─── Public Routes (no authentication required) ───────────────────────────────
 app.get('/', (req, res) => {
   res.status(200).json({
-    message: 'Task Management API with MongoDB & Mongoose is running.',
+    message: 'Task Management API with MongoDB, Mongoose & JWT Auth is running.',
     status: 'online',
     endpoints: {
-      getAllTasks: 'GET /tasks',
-      getTaskById: 'GET /tasks/:id',
-      createTask: 'POST /tasks',
-      updateTask: 'PUT /tasks/:id',
-      deleteTask: 'DELETE /tasks/:id'
+      register: 'POST /register',
+      login: 'POST /login',
+      getAllTasks: 'GET /tasks (Bearer token required)',
+      getTaskById: 'GET /tasks/:id (Bearer token required)',
+      createTask: 'POST /tasks (Bearer token required)',
+      updateTask: 'PUT /tasks/:id (Bearer token required)',
+      deleteTask: 'DELETE /tasks/:id (Bearer token required)'
     }
   });
 });
+
+app.use('/register', authRoutes);
+app.use('/login', authRoutes);
+
+// ─── Protected Routes (require a valid JWT) ───────────────────────────────────
+app.use('/tasks', authMiddleware);
 
 // GET /tasks - Retrieve all tasks (supports title search filtering)
 app.get('/tasks', async (req, res, next) => {
@@ -112,7 +131,7 @@ app.get('/tasks/:id', async (req, res, next) => {
 });
 
 // POST /tasks - Create a new task (enforces schema validation & pre-save hook)
-app.post('/tasks', async (req, res, next) => {
+app.post('/tasks', validateCreateTask, async (req, res, next) => {
   try {
     const { title, description, completed, priority } = req.body;
 
@@ -137,7 +156,7 @@ app.post('/tasks', async (req, res, next) => {
 });
 
 // PUT /tasks/:id - Update an existing task by ID
-app.put('/tasks/:id', async (req, res, next) => {
+app.put('/tasks/:id', validateUpdateTask, async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {

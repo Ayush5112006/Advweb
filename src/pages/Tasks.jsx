@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Footer from '../components/Footer';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
-import { getTasks, createTask, updateTask, deleteTask } from '../api/api';
+import AuthGate from '../components/AuthGate';
+import { getTasks, createTask, updateTask, deleteTask, getToken } from '../api/api';
 
 export default function TasksPage({ studentInfo, themeColor }) {
   const [tasks, setTasks] = useState([]);
@@ -40,6 +41,13 @@ export default function TasksPage({ studentInfo, themeColor }) {
   };
 
   const fetchTasks = async () => {
+    // All /tasks routes require a Bearer token, so skip the request when signed out
+    if (!getToken()) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -58,6 +66,13 @@ export default function TasksPage({ studentInfo, themeColor }) {
 
   useEffect(() => {
     fetchTasks();
+  }, []);
+
+  // Refetch once a login succeeds so the list is already in place
+  useEffect(() => {
+    const handleSession = () => fetchTasks();
+    window.addEventListener('auth:session', handleSession);
+    return () => window.removeEventListener('auth:session', handleSession);
   }, []);
 
   // Handle Creating a Task with Optimistic UI Update
@@ -217,16 +232,17 @@ export default function TasksPage({ studentInfo, themeColor }) {
 
   return (
     <>
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <AuthGate themeColor={themeColor}>
+        <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <ConfirmModal
-        isOpen={deleteModalState.isOpen}
-        title="Delete Task Confirmation"
-        message={`Are you sure you want to delete "${deleteModalState.taskTitle}"? This action cannot be undone.`}
-        onConfirm={confirmDeleteTask}
-        onCancel={() => setDeleteModalState({ isOpen: false, taskId: null, taskTitle: '' })}
-        themeColor={themeColor}
-      />
+        <ConfirmModal
+          isOpen={deleteModalState.isOpen}
+          title="Delete Task Confirmation"
+          message={`Are you sure you want to delete "${deleteModalState.taskTitle}"? This action cannot be undone.`}
+          onConfirm={confirmDeleteTask}
+          onCancel={() => setDeleteModalState({ isOpen: false, taskId: null, taskTitle: '' })}
+          themeColor={themeColor}
+        />
 
       <section className="tasks-page-section">
         <div className="section-container">
@@ -338,12 +354,13 @@ export default function TasksPage({ studentInfo, themeColor }) {
         </div>
       </section>
 
-      <Footer
-        email={studentInfo.email}
-        github={studentInfo.github}
-        linkedin={studentInfo.linkedin}
-        name={studentInfo.name}
-      />
+        <Footer
+          email={studentInfo.email}
+          github={studentInfo.github}
+          linkedin={studentInfo.linkedin}
+          name={studentInfo.name}
+        />
+      </AuthGate>
     </>
   );
 }
