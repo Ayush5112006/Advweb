@@ -85,8 +85,8 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/register', authRoutes);
-app.use('/login', authRoutes);
+// authRoutes already declares the full /register and /login paths
+app.use(authRoutes);
 
 // ─── Protected Routes (require a valid JWT) ───────────────────────────────────
 app.use('/tasks', authMiddleware);
