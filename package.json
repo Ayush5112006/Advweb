@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "server": "node task-manager-api/server.js",
-    "test": "node --test test_simple.js"
+    "test": "node --test test_backend_units.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
