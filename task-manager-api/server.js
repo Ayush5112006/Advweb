@@ -38,13 +38,32 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => console.log('[DB] Connected to MongoDB database successfully.'))
-  .catch((err) => {
-    console.error('[DB] MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+// ─── MongoDB Connection with Retry ─────────────────────────────────────────────
+// `depends_on` only waits for the container to start, not for mongod to accept
+// connections, so the first connect attempt can fail with ECONNREFUSED. Retry
+// with backoff instead of exiting, otherwise the backend crash-loops whenever it
+// boots a moment before MongoDB is ready.
+const DB_CONNECT_MAX_ATTEMPTS = Number(process.env.DB_CONNECT_MAX_ATTEMPTS) || 10;
+const DB_CONNECT_RETRY_DELAY_MS = Number(process.env.DB_CONNECT_RETRY_DELAY_MS) || 3000;
+
+const connectWithRetry = async (attempt = 1) => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log(`[DB] Connected to MongoDB database successfully (attempt ${attempt}).`);
+  } catch (err) {
+    console.error(`[DB] MongoDB connection error (attempt ${attempt}/${DB_CONNECT_MAX_ATTEMPTS}):`, err.message);
+
+    if (attempt >= DB_CONNECT_MAX_ATTEMPTS) {
+      console.error('[DB] Giving up: could not reach MongoDB.');
+      process.exit(1);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, DB_CONNECT_RETRY_DELAY_MS));
+    return connectWithRetry(attempt + 1);
+  }
+};
+
+connectWithRetry();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());

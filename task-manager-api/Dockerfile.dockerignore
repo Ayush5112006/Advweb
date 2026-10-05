@@ -1,0 +1,23 @@
+node_modules
+**/node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+atlas-credentials.env
+*.log
+
+# Frontend-only files
+src
+public
+index.html
+vite.config.js
+nginx.conf
+oxlintrc.json
+.oxlintrc.json
+
+# Docker metadata for the other service
+Dockerfile
+docker-compose.yml
+README.md

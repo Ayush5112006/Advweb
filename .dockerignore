@@ -1,8 +1,17 @@
+# Frontend build context is the repository root (src/, index.html, vite.config.js).
+# Exclude anything not needed to produce the bundle.
+
 node_modules
+**/node_modules
 dist
 .git
 .gitignore
 .env
+.env.*
+atlas-credentials.env
+*.log
+task-manager-api
 Dockerfile
 .dockerignore
 README.md
+index.html.dist
