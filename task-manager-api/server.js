@@ -5,6 +5,8 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import Task from './models/Task.js';
 import authRoutes from './routes/authRoutes.js';
+import taskEvents, { TASK_CREATED, TASK_DELETED } from './events.js';
+import './listeners/taskListeners.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import {
   validateCreateTask,
@@ -68,6 +70,11 @@ const validateContentType = (req, res, next) => {
   next();
 };
 app.use(validateContentType);
+const emitAfterResponse = (res, event, task, context) => {
+  res.once('finish', () => {
+    setImmediate(() => taskEvents.emit(event, task, context));
+  });
+};
 
 // ─── CRUD Routes using Mongoose Model ─────────────────────────────────────────
 
@@ -183,7 +190,10 @@ app.post('/tasks', validateCreateTask, async (req, res, next) => {
     // Task list changed - drop cached lists so the next GET is a MISS
     invalidateTaskListCache();
 
+    console.log(`[API] Response sent at ${new Date().toISOString()}`);
+
     res.status(201).json(savedTask);
+    emitAfterResponse(res, TASK_CREATED, savedTask, { actor: req.user });
   } catch (err) {
     next(err);
   }
@@ -251,10 +261,14 @@ app.delete('/tasks/:id', async (req, res, next) => {
 
     invalidateTaskListCache();
 
+    console.log(`[API] Response sent at ${new Date().toISOString()}`);
+
     res.status(200).json({
       message: 'Task successfully deleted.',
       task: deletedTask
     });
+
+    emitAfterResponse(res, TASK_DELETED, deletedTask, { actor: req.user });
   } catch (err) {
     next(err);
   }
