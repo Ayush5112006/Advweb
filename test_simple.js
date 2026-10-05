@@ -4,6 +4,6 @@ import assert from 'node:assert';
 describe('basic functionality', () => {
   it('should pass a simple test', () => {
     const result = true;
-    assert.strictEqual(result, true);
+    assert.strictEqual(result, false); // deliberately broken for CI failure demo
   });
 });
