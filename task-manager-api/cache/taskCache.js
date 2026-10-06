@@ -22,13 +22,13 @@ export { taskCache, CACHE_ENABLED, CACHE_TTL_SECONDS };
  * Build a deterministic cache key for a search term so that
  * /tasks?search=Foo and /tasks?search=foo   share one entry.
  */
-export const buildSearchKey = (term) => `${SEARCH_KEY_PREFIX}${term.trim().toLowerCase()}`;
+export const buildSearchKey = (term = '') => `${SEARCH_KEY_PREFIX}${String(term).trim().toLowerCase()}`;
 
 /**
  * Escape user input so a search term is matched literally instead of being
  * interpreted as a regular expression (prevents ReDoS / invalid-pattern errors).
  */
-export const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const getCachedTasks = (key) => {
   if (!CACHE_ENABLED) return undefined;
