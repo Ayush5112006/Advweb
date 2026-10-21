@@ -157,3 +157,42 @@ export async function deleteTask(id) {
   });
   return handleResponse(response);
 }
+
+/**
+ * Generate a task description with AI (POST /api/ai/generate-description)
+ *
+ * Practical 13: the browser only ever talks to our own Express backend, which
+ * calls OpenAI server-side. No API key is present in frontend code or in any
+ * request sent from the browser.
+ *
+ * Returns the plain description string, or throws a user-friendly Error when
+ * validation fails or the AI service is unavailable.
+ */
+export async function generateTaskDescription(title) {
+  const response = await fetch(`${BASE_URL}/api/ai/generate-description`, {
+    method: 'POST',
+    headers: buildHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ title })
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok || !data?.success) {
+    const message =
+      data?.message ||
+      (Array.isArray(data?.details) && data.details.join(' ')) ||
+      'AI description generation is currently unavailable. Please enter the description manually.';
+    throw new Error(message);
+  }
+
+  if (typeof data.description !== 'string' || !data.description.trim()) {
+    throw new Error('The AI returned an empty description. Please try again or type it manually.');
+  }
+
+  return data.description.trim();
+}

@@ -1440,6 +1440,40 @@ section {
   font-size: 0.9rem;
 }
 
+/* --- Practical 13: AI API Integration (Generate Description) --- */
+
+.form-row-secondary {
+  flex-wrap: wrap;
+}
+
+.ai-generate-btn {
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+.ai-generate-btn:hover {
+  background-color: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
+.ai-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.ai-disclaimer {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
 .priority-select {
   padding: 10px 14px;
   border-radius: 8px;

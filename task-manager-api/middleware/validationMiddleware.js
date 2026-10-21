@@ -10,11 +10,12 @@ const isBlank = (value) =>
 
 const isNonString = (value) => typeof value !== 'string';
 
-const fail = (res, details) =>
+const fail = (res, details, extra = {}) =>
   res.status(400).json({
     error: 'Validation Error',
     message: 'Input validation failed for the request payload.',
-    details
+    details,
+    ...extra
   });
 
 /**
@@ -171,6 +172,29 @@ export const validateUpdateTask = (req, res, next) => {
   }
 
   if (errors.length) return fail(res, errors);
+
+  next();
+};
+
+/**
+ * POST /api/ai/generate-description - a non-empty task title is required
+ * before the AI service is called (Practical 13).
+ */
+export const validateGenerateDescription = (req, res, next) => {
+  const { title } = req.body ?? {};
+  const errors = [];
+
+  if (isBlank(title)) {
+    errors.push('Task title is required.');
+  } else if (isNonString(title)) {
+    errors.push('Task title must be a string.');
+  } else if (title.trim().length > 200) {
+    errors.push('Task title must be at most 200 characters long.');
+  }
+
+  if (errors.length) return fail(res, errors, { success: false, description: '' });
+
+  req.body.title = title.trim();
 
   next();
 };

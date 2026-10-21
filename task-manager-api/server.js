@@ -5,6 +5,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import Task from './models/Task.js';
 import authRoutes from './routes/authRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import taskEvents, { TASK_CREATED, TASK_DELETED } from './events.js';
 import './listeners/taskListeners.js';
 import authMiddleware from './middleware/authMiddleware.js';
@@ -109,13 +110,17 @@ app.get('/', (req, res) => {
       getTaskById: 'GET /tasks/:id (Bearer token required)',
       createTask: 'POST /tasks (Bearer token required)',
       updateTask: 'PUT /tasks/:id (Bearer token required)',
-      deleteTask: 'DELETE /tasks/:id (Bearer token required)'
+      deleteTask: 'DELETE /tasks/:id (Bearer token required)',
+      generateDescription: 'POST /api/ai/generate-description (AI, OpenAI key stays on the server)'
     }
   });
 });
 
 // authRoutes already declares the full /register and /login paths
 app.use(authRoutes);
+
+// ─── AI Routes (Practical 13) - OpenAI is called from the backend only ───────
+app.use('/api/ai', aiRoutes);
 
 // ─── Protected Routes (require a valid JWT) ───────────────────────────────────
 app.use('/tasks', authMiddleware);
